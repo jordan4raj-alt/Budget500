@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget Assessment</title>
+<style>
+  :root {
+    --blue: #123d73;
+    --blue-dark: #0b2850;
+    --blue-light: #eaf2fc;
+    --ink: #17263c;
+    --muted: #63728a;
+    --line: #dce5f0;
+    --surface: #ffffff;
+    --page: #f3f7fc;
+    --green: #13804a;
+    --red: #bd3434;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--page); color: var(--ink);
+  }
+  header {
+    background: linear-gradient(120deg, var(--blue-dark), var(--blue));
+    color: white; padding: 25px 20px 28px; box-shadow: 0 5px 18px #102f5926;
+  }
+  .header-inner, main { width: min(100% - 32px, 1000px); margin: 0 auto; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; opacity: .78; font-weight: 700; }
+  h1 { margin: 7px 0 5px; font-size: clamp(1.65rem, 5vw, 2.35rem); line-height: 1.15; }
+  header p { margin: 0; color: #dce9fb; font-size: .95rem; }
+  main { padding: 24px 0 42px; }
+  .summary {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; margin-bottom: 20px;
+  }
+  .metric { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 17px 18px; box-shadow: 0 4px 14px #173d6a08; min-width: 0; }
+  .metric-label { color: var(--muted); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .metric-value { margin-top: 8px; font-size: clamp(1.25rem, 3.5vw, 1.8rem); font-weight: 800; overflow-wrap: anywhere; }
+  .metric-value.balance { color: var(--green); }
+  .metric-value.negative { color: var(--red); }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: 0 6px 20px #173d6a09; }
+  .panel-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h2 { margin: 0; font-size: 1.12rem; }
+  .subtext { color: var(--muted); font-size: .86rem; margin-top: 4px; }
+  .budget-setting { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  label { font-size: .86rem; font-weight: 650; }
+  input[type="number"], input[type="text"] { width: 100%; min-width: 0; border: 1px solid #cbd7e6; border-radius: 9px; padding: 9px 10px; color: var(--ink); background: white; font: inherit; }
+  input:focus { outline: 3px solid #6ca8f533; border-color: #4587d2; }
+  #budgetInput { width: 145px; font-weight: 750; }
+  .table-wrap { width: 100%; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 540px; }
+  th { background: #f0f5fc; color: #415570; text-align: left; font-size: .75rem; text-transform: uppercase; letter-spacing: .055em; }
+  th, td { padding: 12px 16px; border-bottom: 1px solid #e8eef6; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: #f8fbff; }
+  th:first-child, td:first-child { width: 54px; text-align: center; }
+  .check { width: 19px; height: 19px; accent-color: var(--blue); cursor: pointer; vertical-align: middle; }
+  .person-name { min-width: 145px; }
+  .amount-cell { width: 170px; }
+  .amount-input { text-align: right; font-variant-numeric: tabular-nums; }
+  .currency { display: flex; align-items: center; gap: 7px; }
+  .currency span { color: var(--muted); font-size: .88rem; }
+  .expense-type { display: inline-block; border-radius: 999px; background: #eaf2fc; color: #174d89; font-size: .7rem; font-weight: 800; padding: 4px 8px; margin-left: 7px; vertical-align: 1px; }
+  .paid-row td:nth-child(2) input[type="text"] { color: #62728a; }
+  .paid-row td:nth-child(2) input[type="text"] { text-decoration: line-through; text-decoration-color: #aab8c9; }
+  .paid-row { background: #f7faff; }
+  .paid-row td:last-child input { background: #f4f7fb; }
+  .bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 15px 20px; border-top: 1px solid var(--line); background: #fbfdff; }
+  .selected-total { color: var(--muted); font-size: .9rem; }
+  .selected-total strong { color: var(--ink); font-size: 1rem; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  button { border: 0; border-radius: 10px; padding: 10px 14px; font: inherit; font-size: .86rem; font-weight: 750; cursor: pointer; }
+  .primary { color: white; background: var(--blue); }
+  .primary:hover { background: var(--blue-dark); }
+  .secondary { color: var(--blue); background: #eaf2fc; }
+  .secondary:hover { background: #dceafb; }
+  .danger { color: #9b3030; background: #fff0f0; }
+  .note { color: var(--muted); font-size: .82rem; line-height: 1.5; margin: 14px 2px 0; }
+  @media (max-width: 650px) {
+    .header-inner, main { width: min(100% - 22px, 1000px); }
+    header { padding: 22px 0 24px; }
+    main { padding-top: 16px; }
+    .summary { grid-template-columns: 1fr 1fr; gap: 9px; }
+    .metric { padding: 13px; border-radius: 13px; }
+    .metric:last-child { grid-column: 1 / -1; }
+    .panel-head { align-items: flex-start; padding: 16px 14px; }
+    th, td { padding: 10px 11px; }
+    .bottom { padding: 14px; }
+    #budgetInput { width: 130px; }
+  }
+</style>
+<style id="premium-refresh">
+:root{--blue:#2463eb;--ink:#172033;--muted:#7b8496;--line:#e6eaf1;--surface:rgba(255,255,255,.94);--page:#f4f6fb;--green:#13845b;--red:#c53b43}
+*{box-sizing:border-box}body{background:radial-gradient(ellipse at 12% 0%,#e5edff 0,transparent 38%),var(--page);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+header{background:linear-gradient(125deg,#10254c,#245fd7 75%,#4a83f5);box-shadow:0 12px 35px #173d6a24}h1{letter-spacing:-.045em;font-weight:800}
+.metric,.panel{background:var(--surface);backdrop-filter:blur(18px);border:1px solid #fff;box-shadow:0 16px 42px rgba(24,39,75,.075)}.metric{border-radius:20px}.panel{border-radius:23px}
+th{background:#f6f8fc;color:#758197}th,td{border-bottom:1px solid var(--line)}input[type=number],input[type=text]{border:1px solid var(--line);border-radius:11px;padding:10px 11px}input:focus{outline:3px solid #2463eb20;border-color:#76a0f5}
+.expense-type{background:#edf3ff;color:#2455ad}.bottom{background:#fbfcff;border-top:1px solid var(--line)}button{border-radius:12px;transition:transform .15s,filter .15s}button:active{transform:scale(.97)}.primary{background:linear-gradient(135deg,#3478ff,#2054d4);box-shadow:0 7px 16px #2463eb30}.secondary{background:#edf3ff;color:#2458b6}
+.theme-toggle{position:absolute;right:max(16px,calc((100vw - 1000px)/2));top:24px;width:42px;height:42px;padding:0;border:1px solid #ffffff55;border-radius:50%;background:#ffffff18;color:white;font-size:19px}
+body.dark{color-scheme:dark;--ink:#eef3ff;--muted:#9eabc0;--line:#2b3850;--surface:rgba(24,33,51,.96);--page:#0c1220;background:radial-gradient(ellipse at 12% 0%,#1b2e52 0,transparent 40%),var(--page);color:var(--ink)}body.dark .metric,body.dark .panel{border-color:#2b3850}body.dark input[type=number],body.dark input[type=text]{background:#172136;color:#eef3ff;border-color:#34435d}body.dark th,body.dark .bottom{background:#172136}body.dark tbody tr:hover,body.dark .paid-row{background:#1c2a43}body.dark .paid-row td:last-child input{background:#202e47}body.dark .secondary{background:#23385d;color:#cbdcff}
+@media(max-width:650px){.theme-toggle{top:18px;right:12px;width:38px;height:38px}.metric{border-radius:17px}.panel{border-radius:19px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="eyebrow">Personal finance planner</div>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐</button>
+    <h1>Budget Assessment</h1>
+    <p>Track expenses, select what to count, and see your remaining balance live.</p>
+  </div>
+</header>
+<main>
+  <section class="summary" aria-label="Budget summary">
+    <div class="metric">
+      <div class="metric-label">Starting budget</div>
+      <div class="metric-value" id="summaryBudget">₹33,754</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Selected expenses</div>
+      <div class="metric-value" id="summaryExpenses">₹0</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Live balance</div>
+      <div class="metric-value balance" id="summaryBalance">₹30,754</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Expense checklist</h2>
+        <div class="subtext">Tick a checkbox to subtract that item from your budget. Names and amounts are editable.</div>
+      </div>
+      <div class="budget-setting">
+        <label for="budgetInput">Starting budget (₹)</label>
+        <input id="budgetInput" type="number" min="0" step="1" value="33754" inputmode="decimal">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Use</th><th scope="col">Name / expense</th><th scope="col">Amount (₹)</th></tr></thead>
+        <tbody id="expenseRows"></tbody>
+      </table>
+    </div>
+    <div class="bottom">
+      <div class="selected-total">Checked items: <strong id="selectedCount">0</strong> · Total deducted: <strong id="deductedTotal">₹0</strong></div>
+      <div class="actions">
+        <button type="button" class="secondary" id="selectAll">Select all</button>
+        <button type="button" class="secondary" id="clearAll">Clear all</button>
+        <button type="button" class="primary" id="addExpense">＋ Add expense</button>
+      </div>
+    </div>
+  </section>
+  <p class="note">Tip: You can edit the starting budget, names, and amounts at any time. Rent and EMI have their own independent checkboxes, just like the other expenses. Your changes are calculated instantly on this page.</p>
+</main>
+<script>
+(() => {
+  const initialExpenses = [
+    { name: "Aman", amount: 4500, checked: false },
+    { name: "Sonaji", amount: 6000, checked: false },
+    { name: "Prashant", amount: 8000, checked: false },
+    { name: "Linson", amount: 700, checked: false },
+    { name: "Abhijeet", amount: 1000, checked: true },
+    { name: "Kaustubh", amount: 2000, checked: true },
+    { name: "Chandan", amount: 3000, checked: false },
+    { name: "Harshit", amount: 1000, checked: false },
+    { name: "Prince", amount: 2000, checked: false },
+    { name: "Rent", amount: 7300, checked: false, type: "FIXED" },
+    { name: "EMI", amount: 7111, checked: false, type: "FIXED" },
+    { name: "Moneyview EMI", amount: 1756, checked: false, type: "FIXED" }
+  ];
+  let expenses = initialExpenses.map(item => ({ ...item }));
+  const rows = document.getElementById("expenseRows");
+  const budgetInput = document.getElementById("budgetInput");
+  const money = value => "₹" + Math.round(value).toLocaleString("en-IN");
+  const safeAmount = value => Math.max(0, Number(value) || 0);
+
+  function renderRows() {
+    rows.innerHTML = "";
+    expenses.forEach((expense, index) => {
+      const tr = document.createElement("tr");
+      if (expense.checked) tr.classList.add("paid-row");
+      const checkTd = document.createElement("td");
+      const check = document.createElement("input");
+      check.type = "checkbox"; check.className = "check";
+      check.checked = expense.checked;
+      check.setAttribute("aria-label", "Include " + expense.name + " in expenses");
+      check.addEventListener("change", () => { expense.checked = check.checked; update(); });
+      checkTd.appendChild(check);
+
+      const nameTd = document.createElement("td");
+      const nameInput = document.createElement("input");
+      nameInput.type = "text"; nameInput.className = "person-name";
+      nameInput.value = expense.name; nameInput.setAttribute("aria-label", "Expense name");
+      nameInput.addEventListener("input", () => { expense.name = nameInput.value; check.setAttribute("aria-label", "Include " + expense.name + " in expenses"); });
+      nameTd.appendChild(nameInput);
+      if (expense.type) {
+        const badge = document.createElement("span");
+        badge.className = "expense-type"; badge.textContent = expense.type;
+        nameTd.appendChild(badge);
+      }
+
+      const amountTd = document.createElement("td"); amountTd.className = "amount-cell";
+      const currency = document.createElement("div"); currency.className = "currency";
+      const rupee = document.createElement("span"); rupee.textContent = "₹";
+      const amountInput = document.createElement("input");
+      amountInput.type = "number"; amountInput.min = "0"; amountInput.step = "1";
+      amountInput.inputMode = "decimal"; amountInput.className = "amount-input";
+      amountInput.value = expense.amount; amountInput.setAttribute("aria-label", "Amount for " + expense.name);
+      amountInput.addEventListener("input", () => { expense.amount = safeAmount(amountInput.value); update(); });
+      currency.append(rupee, amountInput); amountTd.appendChild(currency);
+
+      tr.append(checkTd, nameTd, amountTd); rows.appendChild(tr);
+    });
+    update();
+  }
+  function update() {
+    const budget = safeAmount(budgetInput.value);
+    const selected = expenses.filter(e => e.checked);
+    const total = selected.reduce((sum, e) => sum + safeAmount(e.amount), 0);
+    const balance = budget - total;
+    document.getElementById("summaryBudget").textContent = money(budget);
+    document.getElementById("summaryExpenses").textContent = money(total);
+    const balanceEl = document.getElementById("summaryBalance");
+    balanceEl.textContent = money(balance);
+    balanceEl.classList.toggle("negative", balance < 0);
+    balanceEl.classList.toggle("balance", balance >= 0);
+    document.getElementById("selectedCount").textContent = selected.length;
+    document.getElementById("deductedTotal").textContent = money(total);
+    [...rows.rows].forEach((row, i) => row.classList.toggle("paid-row", !!expenses[i]?.checked));
+  }
+  budgetInput.addEventListener("input", update);
+  document.getElementById("selectAll").addEventListener("click", () => { expenses.forEach(e => e.checked = true); renderRows(); });
+  document.getElementById("clearAll").addEventListener("click", () => { expenses.forEach(e => e.checked = false); renderRows(); });
+  document.getElementById("addExpense").addEventListener("click", () => {
+    expenses.push({ name: "New expense", amount: 0, checked: false });
+    renderRows();
+    const inputs = rows.querySelectorAll('input[type="text"]');
+    inputs[inputs.length - 1]?.focus();
+    inputs[inputs.length - 1]?.select();
+  });
+  renderRows();
+  const themeToggle = document.getElementById("themeToggle");
+  themeToggle.addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+    themeToggle.textContent = document.body.classList.contains("dark") ? "☀" : "◐";
+  });
+})();
+</script>
+</body>
+</html>
